@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "snake-migrator"
+version = "0.1.0"
+description = "Tools for migrating RobotPy/semiwrap APIs to snake_case names"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    {name = "RobotPy Development Team", email = "robotpy@googlegroups.com"},
+]
+license = "BSD-3-Clause"
+dependencies = [
+    "libcst>=1.0",
+    "semiwrap~=0.5.0",
+    "tomlkit>=0.12",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8",
+]
+
+[project.scripts]
+snake-case-migration = "snake_case_migration.cli:main"
+
+[project.urls]
+"Source code" = "https://github.com/robotpy/snake_migrator"
+
+[tool.hatch.build.targets.wheel]
+packages = ["snake_case_migration"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
