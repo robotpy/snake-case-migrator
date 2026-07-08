@@ -1,7 +1,8 @@
 from pathlib import Path
 
 from snake_case_migration.manifest import Manifest
-from snake_case_migration.scan_py import scan_caps_constants_file
+from snake_case_migration.names import NameTransforms
+from snake_case_migration.scan_py import scan_caps_constants_file, scan_python_file
 
 
 def _mapping_dict(manifest: Manifest) -> dict[tuple[str, str, str], str]:
@@ -9,6 +10,10 @@ def _mapping_dict(manifest: Manifest) -> dict[tuple[str, str, str], str]:
         (mapping.scope, mapping.kind, mapping.old): mapping.new
         for mapping in manifest.mappings
     }
+
+
+def _empty_transforms() -> NameTransforms:
+    return NameTransforms.from_known_words([])
 
 
 def test_scan_caps_constants_file_finds_module_class_and_local_constants(
@@ -29,7 +34,7 @@ def make():
 """)
     manifest = Manifest()
 
-    scan_caps_constants_file(source_path, manifest)
+    scan_caps_constants_file(source_path, manifest, _empty_transforms())
 
     mappings = _mapping_dict(manifest)
     assert mappings[("global", "attribute", "K_MODULE_PORT")] == "MODULE_PORT"
@@ -52,7 +57,7 @@ class MyRobot:
 """)
     manifest = Manifest()
 
-    scan_caps_constants_file(source_path, manifest)
+    scan_caps_constants_file(source_path, manifest, _empty_transforms())
 
     mappings = _mapping_dict(manifest)
     assert mappings[("global", "attribute", "K_LED_SPACING")] == "LED_SPACING"
@@ -76,7 +81,7 @@ class Axis(enum.IntEnum):
 """)
     manifest = Manifest()
 
-    scan_caps_constants_file(source_path, manifest)
+    scan_caps_constants_file(source_path, manifest, _empty_transforms())
 
     mappings = _mapping_dict(manifest)
     assert mappings[("global", "enum_value", "K_UP")] == "UP"
@@ -96,7 +101,7 @@ class Other:
 """)
     manifest = Manifest()
 
-    scan_caps_constants_file(source_path, manifest)
+    scan_caps_constants_file(source_path, manifest, _empty_transforms())
 
     matches = [
         mapping
@@ -107,3 +112,18 @@ class Other:
     ]
     assert len(matches) == 1
     assert matches[0].new == "WAIT"
+
+
+def test_scan_python_file_uses_manifest_known_words(tmp_path: Path):
+    source_path = tmp_path / "robot.py"
+    source_path.write_text("""\
+def GetOpMode():
+    pass
+""")
+    manifest = Manifest(known_words=["OpMode"])
+    transforms = NameTransforms.from_known_words(manifest.known_words)
+
+    scan_python_file(source_path, manifest, str(source_path), transforms)
+
+    mappings = _mapping_dict(manifest)
+    assert mappings[(str(source_path), "method", "GetOpMode")] == "get_opmode"

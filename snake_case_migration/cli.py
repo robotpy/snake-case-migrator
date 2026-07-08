@@ -8,7 +8,7 @@ import tomlkit
 
 from .audit import audit_python_source, audit_semiwrap_yaml_source, iter_audit_files
 from .manifest import Manifest, load_manifest, save_manifest
-from .names import DEFAULT_KNOWN_WORDS
+from .names import NameTransforms
 from .rewrite_py import rewrite_python_source
 from .rewrite_text import iter_text_files, rewrite_text_source
 from .scan_py import iter_python_files, scan_caps_constants_file, scan_python_file
@@ -83,7 +83,7 @@ def _set_name_transform(semiwrap: tomlkit.items.Table) -> None:
     name_transform = semiwrap["name_transform"]
     name_transform["default"] = "snake_case"
     name_transform["enum_value"] = "CAPS_CASE"
-    name_transform["known_words"] = list(DEFAULT_KNOWN_WORDS)
+    name_transform["known_words"] = []
 
 
 def _run_pyproject(paths: list[Path], write: bool) -> int:
@@ -107,12 +107,13 @@ def _run_pyproject(paths: list[Path], write: bool) -> int:
 
 def _run_scan_py(paths: list[Path], manifest_path: Path, write: bool) -> int:
     manifest = _load_or_new_manifest(manifest_path)
+    name_transforms = NameTransforms.from_known_words(manifest.known_words)
     before = {
         (mapping.scope, mapping.kind, mapping.old, mapping.new)
         for mapping in manifest.mappings
     }
     for path in iter_python_files(paths):
-        scan_python_file(path, manifest, str(path))
+        scan_python_file(path, manifest, str(path), name_transforms)
     after = {
         (mapping.scope, mapping.kind, mapping.old, mapping.new)
         for mapping in manifest.mappings
@@ -129,12 +130,13 @@ def _run_scan_caps_constants(
     paths: list[Path], manifest_path: Path, write: bool
 ) -> int:
     manifest = _load_or_new_manifest(manifest_path)
+    name_transforms = NameTransforms.from_known_words(manifest.known_words)
     before = {
         (mapping.scope, mapping.kind, mapping.old, mapping.new)
         for mapping in manifest.mappings
     }
     for path in iter_python_files(paths):
-        scan_caps_constants_file(path, manifest)
+        scan_caps_constants_file(path, manifest, name_transforms)
     after = {
         (mapping.scope, mapping.kind, mapping.old, mapping.new)
         for mapping in manifest.mappings

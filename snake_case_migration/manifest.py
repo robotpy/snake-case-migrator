@@ -5,8 +5,6 @@ from pathlib import Path
 
 import tomlkit
 
-from .names import DEFAULT_KNOWN_WORDS
-
 
 @dataclasses.dataclass(slots=True)
 class Mapping:
@@ -27,9 +25,7 @@ class Ignore:
 
 @dataclasses.dataclass(slots=True)
 class Manifest:
-    known_words: list[str] = dataclasses.field(
-        default_factory=lambda: list(DEFAULT_KNOWN_WORDS)
-    )
+    known_words: list[str] = dataclasses.field(default_factory=list)
     mappings: list[Mapping] = dataclasses.field(default_factory=list)
     ignored: list[Ignore] = dataclasses.field(default_factory=list)
     semiwrap_bugs: list[dict[str, str]] = dataclasses.field(default_factory=list)
@@ -57,7 +53,7 @@ def merge_mapping(manifest: Manifest, mapping: Mapping) -> None:
 def load_manifest(path: str | Path) -> Manifest:
     data = tomlkit.parse(Path(path).read_text())
     manifest = Manifest(
-        known_words=list(data.get("config", {}).get("known_words", DEFAULT_KNOWN_WORDS))
+        known_words=list(data.get("config", {}).get("known_words", []))
     )
     for item in data.get("mapping", []):
         manifest.mappings.append(Mapping(**dict(item)))

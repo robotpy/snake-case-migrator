@@ -6,10 +6,9 @@ from pathlib import Path
 
 from .manifest import Manifest, Mapping, merge_mapping
 from .names import (
+    NameTransforms,
     is_dunder,
     is_probably_type_name,
-    to_caps_case_without_k_prefix,
-    to_snake_case,
 )
 
 _K_CAPS_RE = re.compile(r"^K_[A-Z0-9_]+$")
@@ -52,10 +51,11 @@ def _merge_caps_mapping(
     kind: str,
     old: str,
     scope: str,
+    name_transforms: NameTransforms,
 ) -> None:
     if not _K_CAPS_RE.match(old):
         return
-    new = to_caps_case_without_k_prefix(old)
+    new = name_transforms.to_caps_case_without_k_prefix(old)
     if new == old:
         return
     merge_mapping(
@@ -85,13 +85,18 @@ def iter_python_files(paths: list[Path]) -> list[Path]:
     return sorted(files)
 
 
-def scan_python_file(path: Path, manifest: Manifest, scope: str) -> None:
+def scan_python_file(
+    path: Path,
+    manifest: Manifest,
+    scope: str,
+    name_transforms: NameTransforms,
+) -> None:
     tree = ast.parse(path.read_text(), filename=str(path))
     for node in ast.walk(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             name = node.name
-            if not is_dunder(name) and not is_probably_type_name(name):
-                new = to_snake_case(name, "method")
+            if not is_dunder(name):
+                new = name_transforms.to_snake_case(name, "method")
                 if new != name:
                     merge_mapping(
                         manifest,
@@ -106,7 +111,7 @@ def scan_python_file(path: Path, manifest: Manifest, scope: str) -> None:
         elif isinstance(node, ast.arg):
             name = node.arg
             if not is_dunder(name) and not is_probably_type_name(name):
-                new = to_snake_case(name, "parameter")
+                new = name_transforms.to_snake_case(name, "parameter")
                 if new != name:
                     merge_mapping(
                         manifest,
@@ -121,9 +126,15 @@ def scan_python_file(path: Path, manifest: Manifest, scope: str) -> None:
 
 
 class _CapsConstantScanVisitor(ast.NodeVisitor):
-    def __init__(self, manifest: Manifest, scope: str):
+    def __init__(
+        self,
+        manifest: Manifest,
+        scope: str,
+        name_transforms: NameTransforms,
+    ):
         self.manifest = manifest
         self.scope = scope
+        self.name_transforms = name_transforms
         self._enum_depth = 0
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
@@ -143,6 +154,7 @@ class _CapsConstantScanVisitor(ast.NodeVisitor):
                     kind=kind,
                     old=name,
                     scope=self.scope,
+                    name_transforms=self.name_transforms,
                 )
         self.visit(node.value)
 
@@ -154,6 +166,7 @@ class _CapsConstantScanVisitor(ast.NodeVisitor):
                 kind=kind,
                 old=name,
                 scope=self.scope,
+                name_transforms=self.name_transforms,
             )
         if node.value is not None:
             self.visit(node.value)
@@ -162,7 +175,8 @@ class _CapsConstantScanVisitor(ast.NodeVisitor):
 def scan_caps_constants_file(
     path: Path,
     manifest: Manifest,
+    name_transforms: NameTransforms,
     scope: str = "global",
 ) -> None:
     tree = ast.parse(path.read_text(), filename=str(path))
-    _CapsConstantScanVisitor(manifest, scope).visit(tree)
+    _CapsConstantScanVisitor(manifest, scope, name_transforms).visit(tree)

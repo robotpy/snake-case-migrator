@@ -13,42 +13,7 @@ from snake_case_migration.manifest import (
     save_manifest,
 )
 
-REQUIRED_KNOWN_WORDS = [
-    "mDNS",
-    "L1",
-    "L2",
-    "L3",
-    "R1",
-    "R2",
-    "R3",
-    "DS",
-    "CAN",
-    "PWM",
-    "I2C",
-    "SPI",
-    "NT",
-    "JSON",
-    "PID",
-    "IMU",
-    "HAL",
-    "JNI",
-    "USB",
-    "HTTP",
-    "URI",
-    "URL",
-    "CPU",
-    "FPGA",
-    "FMS",
-    "PCM",
-    "PDP",
-    "PDH",
-    "RIO",
-    "OpMode",
-    "Pose2d",
-    "Translation2d",
-    "Rotation2d",
-    "Rotation3d",
-]
+REQUIRED_KNOWN_WORDS: list[str] = []
 
 CONTROLLER_KNOWN_WORDS_CLEANUP_SCOPES = (
     "subprojects/robotpy-commands-v2/commands2/button",
@@ -100,6 +65,26 @@ def test_manifest_init_cli_writes_manifest(tmp_path):
         check=True,
     )
     assert "[config]" in path.read_text()
+
+
+def test_new_manifest_defaults_to_empty_known_words():
+    assert Manifest().known_words == []
+
+
+def test_load_manifest_without_config_known_words_defaults_to_empty_list(tmp_path: Path):
+    path = tmp_path / "manifest.toml"
+    path.write_text("""\
+[[mapping]]
+kind = "method"
+old = "GetOpMode"
+new = "get_op_mode"
+source = "test"
+""")
+
+    manifest = load_manifest(path)
+
+    assert manifest.known_words == []
+    assert manifest.mappings[0].old == "GetOpMode"
 
 
 def test_pyproject_cli_writes_required_name_transform_settings(tmp_path: Path):
