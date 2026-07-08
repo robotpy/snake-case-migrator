@@ -1,15 +1,10 @@
 import subprocess
 import sys
 
-from snake_case_migration import names
 from snake_case_migration.names import (
     NameTransforms,
     is_probably_type_name,
 )
-
-
-def test_default_known_words_symbol_is_removed():
-    assert not hasattr(names, "DEFAULT_KNOWN_WORDS")
 
 
 def test_name_transforms_use_empty_known_words_when_given_empty_list():

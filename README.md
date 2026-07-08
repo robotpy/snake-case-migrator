@@ -25,7 +25,7 @@ The migration is driven by a TOML manifest. By default the CLI reads and writes 
 
 A manifest contains:
 
-- `config.known_words`: terms that should stay grouped during name conversion, such as `CAN`, `FPGA`, `Pose2d`, or `mDNS`.
+- `config.known_words`: terms that should stay grouped during name conversion. This list is the only source of known words used by scans; if it is omitted, scans use an empty list.
 - `[[mapping]]`: old-to-new name mappings. Mappings record the name kind, old name, new name, source, optional reason, and scope.
 - `[[ignored]]`: names that should not be reported by audit.
 - `[[semiwrap_bug]]`: notes for migration issues caused by semiwrap behavior rather than project code.
@@ -52,7 +52,7 @@ Mappings and ignores can be global or scoped to a directory. Scoped entries only
 
    - `tool.semiwrap.name_transform.default = "snake_case"`
    - `tool.semiwrap.name_transform.enum_value = "CAPS_CASE"`
-   - `tool.semiwrap.name_transform.known_words`
+   - `tool.semiwrap.name_transform.known_words = []`
 
 3. Scan existing Python code to add generated mappings to the manifest:
 
