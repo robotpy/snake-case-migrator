@@ -95,7 +95,7 @@ def scan_python_file(
     for node in ast.walk(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             name = node.name
-            if not is_dunder(name):
+            if not is_dunder(name) and not is_probably_type_name(name):
                 new = name_transforms.to_snake_case(name, "method")
                 if new != name:
                     merge_mapping(

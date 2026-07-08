@@ -117,6 +117,21 @@ class Other:
 def test_scan_python_file_uses_manifest_known_words(tmp_path: Path):
     source_path = tmp_path / "robot.py"
     source_path.write_text("""\
+def getOpMode():
+    pass
+""")
+    manifest = Manifest(known_words=["OpMode"])
+    transforms = NameTransforms.from_known_words(manifest.known_words)
+
+    scan_python_file(source_path, manifest, str(source_path), transforms)
+
+    mappings = _mapping_dict(manifest)
+    assert mappings[(str(source_path), "method", "getOpMode")] == "get_opmode"
+
+
+def test_scan_python_file_skips_probable_type_name_functions(tmp_path: Path):
+    source_path = tmp_path / "robot.py"
+    source_path.write_text("""\
 def GetOpMode():
     pass
 """)
@@ -126,4 +141,4 @@ def GetOpMode():
     scan_python_file(source_path, manifest, str(source_path), transforms)
 
     mappings = _mapping_dict(manifest)
-    assert mappings[(str(source_path), "method", "GetOpMode")] == "get_opmode"
+    assert (str(source_path), "method", "GetOpMode") not in mappings
