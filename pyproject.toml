@@ -14,7 +14,7 @@ authors = [
 license = "BSD-3-Clause"
 dependencies = [
     "libcst>=1.0",
-    "semiwrap~=0.5.0",
+    "semiwrap~=0.6.0",
     "tomlkit>=0.12",
 ]
 
