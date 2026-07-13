@@ -24,7 +24,7 @@ test = [
 ]
 
 [project.scripts]
-snake-case-migration = "snake_case_migration.cli:main"
+snake-migrator = "snake_case_migration.cli:main"
 
 [project.urls]
 "Source code" = "https://github.com/robotpy/snake_migrator"

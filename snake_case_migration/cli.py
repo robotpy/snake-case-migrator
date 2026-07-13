@@ -21,7 +21,7 @@ def _add_write_paths(parser: argparse.ArgumentParser) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="snake_case_migration",
+        prog="snake-migrator",
         description="Migrate semiwrap-based Python projects to snake_case APIs.",
     )
     parser.add_argument("--manifest", default="snake_case_migration.toml")
