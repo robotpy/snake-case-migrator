@@ -2,7 +2,7 @@
 
 `snake-migrator` is a migration helper for RobotPy/semiwrap projects that are moving generated APIs from camelCase and WPILib-style enum names to Pythonic `snake_case` and `CAPS_CASE` names.
 
-The installed Python package is `snake_case_migration`. The command-line entry point is `snake-case-migration`, and the module can also be run with `python -m snake_case_migration`.
+The installed Python package is `snake_case_migration`. The command-line entry point is `snake-migrator`, and the module can also be run with `python -m snake_case_migration`.
 
 ## Installation
 
@@ -37,15 +37,15 @@ Mappings and ignores can be global or scoped to a directory. Scoped entries only
 1. Create or validate a manifest:
 
    ```bash
-   snake-case-migration manifest init
-   snake-case-migration manifest check
+   snake-migrator manifest init
+   snake-migrator manifest check
    ```
 
 2. Update semiwrap projects so generated bindings use snake-case output:
 
    ```bash
-   snake-case-migration pyproject path/to/pyproject.toml
-   snake-case-migration pyproject --write path/to/pyproject.toml
+   snake-migrator pyproject path/to/pyproject.toml
+   snake-migrator pyproject --write path/to/pyproject.toml
    ```
 
    Without `--write`, the command prints files that would change. With `--write`, it adds or updates:
@@ -57,36 +57,58 @@ Mappings and ignores can be global or scoped to a directory. Scoped entries only
 3. Scan existing Python code to add generated mappings to the manifest:
 
    ```bash
-   snake-case-migration scan-py --write src tests examples
+   snake-migrator scan-py --write src tests examples
    ```
 
 4. Scan constants that should become final `CAPS_CASE` enum or constant names:
 
    ```bash
-   snake-case-migration scan-caps-constants --write src
+   snake-migrator scan-caps-constants --write src
    ```
 
 5. Rewrite Python code using the manifest mappings:
 
    ```bash
-   snake-case-migration rewrite-py src tests examples
-   snake-case-migration rewrite-py --write src tests examples
+   snake-migrator rewrite-py src tests examples
+   snake-migrator rewrite-py --write src tests examples
    ```
 
 6. Rewrite documentation, examples, and other text files:
 
    ```bash
-   snake-case-migration rewrite-text docs examples
-   snake-case-migration rewrite-text --write docs examples
+   snake-migrator rewrite-text docs examples
+   snake-migrator rewrite-text --write docs examples
+   ```
+
+   For mixed-language RST documentation, use the Python-only RST mode instead of raw `rewrite-text`:
+
+   ```bash
+   snake-migrator rewrite-rst-python docs
+   snake-migrator rewrite-rst-python --write docs
+   ```
+
+   This rewrites only Python-labeled RST code blocks, Python tab items, and Python domain role targets so Java and C++ examples are left unchanged. Remote include directives (`remoteliteralinclude` and its `rli` alias) are never rewritten.
+
+   If you are migrating documentation outside the source-tree scopes recorded in the manifest, apply all mappings regardless of scope:
+
+   ```bash
+   snake-migrator rewrite-rst-python --all-scopes --write docs
    ```
 
 7. Audit for remaining old-style names:
 
    ```bash
-   snake-case-migration audit src tests examples
+   snake-migrator audit src tests examples
    ```
 
    `audit` exits with status `1` if it finds remaining old-style names and `0` otherwise.
+
+   For mixed-language RST documentation, audit only Python-labeled RST regions:
+
+   ```bash
+   snake-migrator audit-rst-python docs
+   snake-migrator audit-rst-python --all-scopes docs
+   ```
 
 ## Command behavior
 

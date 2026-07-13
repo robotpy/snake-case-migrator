@@ -10,8 +10,10 @@ from .audit import audit_python_source, audit_semiwrap_yaml_source, iter_audit_f
 from .manifest import Manifest, load_manifest, save_manifest
 from .names import NameTransforms
 from .rewrite_py import rewrite_python_source
+from .rewrite_rst import audit_rst_python_source, iter_rst_files, rewrite_rst_python_source
 from .rewrite_text import iter_text_files, rewrite_text_source
 from .scan_py import iter_python_files, scan_caps_constants_file, scan_python_file
+from .scope import manifest_with_global_mapping_scopes
 
 
 def _add_write_paths(parser: argparse.ArgumentParser) -> None:
@@ -57,6 +59,28 @@ def build_parser() -> argparse.ArgumentParser:
         "rewrite-text", help="Rewrite docs/examples text using mappings"
     )
     _add_write_paths(rewrite_text)
+
+    rewrite_rst_python = subparsers.add_parser(
+        "rewrite-rst-python",
+        help="Rewrite only Python-labeled RST docs/examples using mappings",
+    )
+    rewrite_rst_python.add_argument(
+        "--all-scopes",
+        action="store_true",
+        help="Apply all manifest mappings regardless of scope for documentation migration",
+    )
+    _add_write_paths(rewrite_rst_python)
+
+    audit_rst_python = subparsers.add_parser(
+        "audit-rst-python",
+        help="Report remaining old-style names in Python-labeled RST docs/examples",
+    )
+    audit_rst_python.add_argument(
+        "--all-scopes",
+        action="store_true",
+        help="Apply all manifest mappings regardless of scope for documentation migration",
+    )
+    audit_rst_python.add_argument("paths", nargs="+", type=Path)
 
     audit = subparsers.add_parser("audit", help="Report remaining old-style names")
     audit.add_argument("paths", nargs="+", type=Path)
@@ -185,6 +209,49 @@ def _run_rewrite_text(paths: list[Path], manifest_path: Path, write: bool) -> in
     return 0
 
 
+def _load_rst_manifest(manifest_path: Path, all_scopes: bool) -> Manifest:
+    manifest = load_manifest(manifest_path)
+    if all_scopes:
+        return manifest_with_global_mapping_scopes(manifest)
+    return manifest
+
+
+def _run_rewrite_rst_python(
+    paths: list[Path], manifest_path: Path, write: bool, all_scopes: bool
+) -> int:
+    manifest = _load_rst_manifest(manifest_path, all_scopes)
+    changed: list[Path] = []
+    for path in iter_rst_files(paths):
+        source = path.read_text()
+        updated = rewrite_rst_python_source(
+            source, manifest, path=path, root_path=manifest_path.parent
+        )
+        if updated != source:
+            changed.append(path)
+            if write:
+                path.write_text(updated)
+    if not write:
+        for path in changed:
+            print(path)
+    return 0
+
+
+def _run_audit_rst_python(
+    paths: list[Path], manifest_path: Path, all_scopes: bool
+) -> int:
+    manifest = _load_rst_manifest(manifest_path, all_scopes)
+    found = False
+    for path in iter_rst_files(paths):
+        source = path.read_text()
+        messages = audit_rst_python_source(
+            source, manifest, path=path, root_path=manifest_path.parent
+        )
+        for message in messages:
+            print(f"{path}: {message}")
+            found = True
+    return 1 if found else 0
+
+
 def _run_audit(paths: list[Path], manifest_path: Path) -> int:
     manifest = load_manifest(manifest_path)
     found = False
@@ -234,6 +301,14 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.command == "rewrite-text":
         return _run_rewrite_text(args.paths, manifest_path, args.write)
+
+    if args.command == "rewrite-rst-python":
+        return _run_rewrite_rst_python(
+            args.paths, manifest_path, args.write, args.all_scopes
+        )
+
+    if args.command == "audit-rst-python":
+        return _run_audit_rst_python(args.paths, manifest_path, args.all_scopes)
 
     if args.command == "audit":
         return _run_audit(args.paths, manifest_path)

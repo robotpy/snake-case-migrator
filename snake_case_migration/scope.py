@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 import posixpath
 from pathlib import Path
 
@@ -123,3 +124,16 @@ def scoped_ignored_names(
     manifest: Manifest, path: str | Path | None, root_path: str | Path | None = None
 ) -> set[str]:
     return {ignored.name for ignored in scoped_ignored(manifest, path, root_path)}
+
+
+def manifest_with_global_mapping_scopes(manifest: Manifest) -> Manifest:
+    """Return a copy whose mappings apply regardless of their original scope."""
+    return Manifest(
+        known_words=list(manifest.known_words),
+        mappings=[
+            dataclasses.replace(mapping, scope="global")
+            for mapping in manifest.mappings
+        ],
+        ignored=list(manifest.ignored),
+        semiwrap_bugs=[dict(bug) for bug in manifest.semiwrap_bugs],
+    )

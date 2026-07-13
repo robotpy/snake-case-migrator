@@ -80,6 +80,8 @@ def test_cli_help_runs():
         stderr=subprocess.PIPE,
         text=True,
     )
-    assert "snake_case_migration" in result.stdout
+    assert "snake-migrator" in result.stdout
     assert "manifest" in result.stdout
     assert "rewrite-py" in result.stdout
+    assert "rewrite-rst-python" in result.stdout
+    assert "audit-rst-python" in result.stdout
